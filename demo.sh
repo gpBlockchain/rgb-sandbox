@@ -305,12 +305,8 @@ start_services() {
     _subtit "stopping services"
     docker compose down
     _subtit "checking bound ports"
-    if ! which ss >/dev/null; then
-        _log "ss not available, skipping bound ports check"
-        return
-    fi
     # see docker-compose.yml for the exposed ports
-    if [ -n "$(ss -HOlnt 'sport = :50001')" ];then
+    if nc -z localhost 50001;then
         _die "port 50001 is already bound, electrs service can't start"
     fi
     _subtit "starting services"
@@ -439,7 +435,9 @@ transfer_create() {
 
     ## extract PSBT data
     local decoded_psbt
-    decoded_psbt="$(_trace "${BCLI[@]}" decodepsbt "$(base64 -w0 "$send_data/$PSBT")")"
+    # By default, linux wraps base64 output every 76 cols, so we use 'tr -d' to remove whitespaces.
+    # Note 'base64 -w0' doesn't work on Mac OS X, which has different flags.
+    decoded_psbt="$(_trace "${BCLI[@]}" decodepsbt "$(cat $send_data/$PSBT | base64 | tr -d '\r\n')")"
     if [ $DEBUG = 1 ]; then
         _log "showing PSBT including RGB transfer data"
         echo "$decoded_psbt" | jq
@@ -478,9 +476,12 @@ transfer_complete() {
     local der_xprv der_xpub psbt_finalized psbt_signed
     der_xprv=${DER_XPRV_MAP[$SEND_WLT]}
     der_xpub=${DER_XPUB_MAP[$SEND_WLT]}
+
+    # By default, linux wraps base64 output every 76 cols, so we use 'tr -d' to remove whitespaces.
+    # Note 'base64 -w0' doesn't work on Mac OS X, which has different flags.
     psbt_signed=$(_trace "$BDKI" -n $NETWORK wallet -w "$SEND_WLT" \
         -d "${DESC_TYPE}($der_xprv)" sign \
-        --psbt "$(base64 -w0 "$send_data/$PSBT")")
+        --psbt "$(cat $send_data/$PSBT | base64 | tr -d '\r\n')")
     psbt_finalized=$(echo "$psbt_signed" \
         | jq -r 'select(.is_finalized = true) |.psbt')
     [ -n "$psbt_finalized" ] || _die "error signing or finalizing PSBT"
