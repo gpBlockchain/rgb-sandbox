@@ -435,7 +435,6 @@ transfer_create() {
 
     ## extract PSBT data
     local decoded_psbt
-
     decoded_psbt="$(_trace "${BCLI[@]}" decodepsbt "$(base64_file_nowrap "$send_data/$PSBT")")"
     if [ $DEBUG = 1 ]; then
         _log "showing PSBT including RGB transfer data"
