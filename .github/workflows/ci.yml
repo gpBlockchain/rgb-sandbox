@@ -3,17 +3,17 @@ name: Tests
 on:
   push:
     branches:
-      - main
+      - master
   pull_request:
     branches:
-      - main
+      - master
 
 jobs:
   default:
     strategy:
       matrix:
         os:
-#          - macos-latest
+          - macos-latest
           - ubuntu-20.04
 
     runs-on: ${{ matrix.os }}
@@ -24,6 +24,12 @@ jobs:
         with:
           submodules: 'recursive'
           fetch-depth: 1
+
+      - name: Install Docker (macOS only)
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install --cask docker
+          open --background -a Docker
 
       - name: Tests
         run: bash demo.sh
