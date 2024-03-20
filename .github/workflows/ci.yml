@@ -15,5 +15,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     name: ${{ matrix.os }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Tests
         run: bash demo.sh
