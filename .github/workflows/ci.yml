@@ -1,0 +1,19 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  default:
+    strategy:
+      matrix:
+        os:
+          - macos-latest
+          - ubuntu-20.04
+
+    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.os }}
+    steps:
+      - name: Tests
+        run: bash demo.sh
