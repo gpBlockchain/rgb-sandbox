@@ -529,7 +529,7 @@ base64_file_nowrap() {
     # Note that the option '-w0' for 'base64' doesn't work on Mac OS X due to different flags.
     # Arguments:
     #   $1: File path to be encoded
-    cat $1 | base64 | tr -d '\r\n'
+    cat "$1" | base64 | tr -d '\r\n'
 }
 
 
