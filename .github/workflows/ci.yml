@@ -1,0 +1,35 @@
+name: Tests
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  default:
+    strategy:
+      matrix:
+        os:
+#          - macos-latest
+          - ubuntu-20.04
+
+    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+          fetch-depth: 1
+
+      - name: Install Docker (macOS only)
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install --cask docker
+          open --background -a Docker
+
+      - name: Tests
+        run: bash demo.sh
