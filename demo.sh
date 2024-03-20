@@ -165,7 +165,7 @@ check_schemata_version() {
 
 check_tools() {
     _subtit "checking required tools"
-    local required_tools="base64 cargo cut docker grep head jq sha256sum"
+    local required_tools="base64 cargo cut docker grep head jq sha256sum nc tr"
     for tool in $required_tools; do
         if ! which "$tool" >/dev/null; then
             _die "could not find reruired tool \"$tool\", please install it and try again"
@@ -435,9 +435,8 @@ transfer_create() {
 
     ## extract PSBT data
     local decoded_psbt
-    # By default, linux wraps base64 output every 76 cols, so we use 'tr -d' to remove whitespaces.
-    # Note 'base64 -w0' doesn't work on Mac OS X, which has different flags.
-    decoded_psbt="$(_trace "${BCLI[@]}" decodepsbt "$(cat $send_data/$PSBT | base64 | tr -d '\r\n')")"
+
+    decoded_psbt="$(_trace "${BCLI[@]}" decodepsbt "$(base64_file_nowrap "$send_data/$PSBT")")"
     if [ $DEBUG = 1 ]; then
         _log "showing PSBT including RGB transfer data"
         echo "$decoded_psbt" | jq
@@ -477,11 +476,9 @@ transfer_complete() {
     der_xprv=${DER_XPRV_MAP[$SEND_WLT]}
     der_xpub=${DER_XPUB_MAP[$SEND_WLT]}
 
-    # By default, linux wraps base64 output every 76 cols, so we use 'tr -d' to remove whitespaces.
-    # Note 'base64 -w0' doesn't work on Mac OS X, which has different flags.
     psbt_signed=$(_trace "$BDKI" -n $NETWORK wallet -w "$SEND_WLT" \
         -d "${DESC_TYPE}($der_xprv)" sign \
-        --psbt "$(cat $send_data/$PSBT | base64 | tr -d '\r\n')")
+        --psbt "$(base64_file_nowrap "$send_data/$PSBT")")
     psbt_finalized=$(echo "$psbt_signed" \
         | jq -r 'select(.is_finalized = true) |.psbt')
     [ -n "$psbt_finalized" ] || _die "error signing or finalizing PSBT"
@@ -524,6 +521,15 @@ help() {
     echo "    -h --help     show this help message"
     echo "    -t --tapret   user tapret1st closing method"
     echo "    -v --verbose  enable verbose output"
+}
+
+base64_file_nowrap() {
+    # This function encodes the specified file to base64 format without wrapping lines.
+    # By default, Linux systems wrap base64 output every 76 columns. We use 'tr -d' to remove whitespaces.
+    # Note that the option '-w0' for 'base64' doesn't work on Mac OS X due to different flags.
+    # Arguments:
+    #   $1: File path to be encoded
+    cat $1 | base64 | tr -d '\r\n'
 }
 
 
